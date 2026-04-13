@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Parciais Harmônicos — Visualizador Dinâmico</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700&family=Space+Mono:wght@400;700&display=swap');
+
+:root {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface2: #1a1a26;
+  --border: #2a2a3a;
+  --text: #e8e8f0;
+  --text-dim: #7a7a8e;
+  --accent: #6ee7b7;
+  --accent2: #3b82f6;
+  --accent3: #f472b6;
+  --accent4: #fbbf24;
+  --glow: rgba(110, 231, 183, 0.15);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.app {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  min-height: 100vh;
+}
+
+/* Header */
+header {
+  padding: 20px 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(110,231,183,0.03) 0%, transparent 100%);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.logo h1 {
+  font-family: 'Space Mono', monospace;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.logo h1 span {
+  color: var(--accent);
+}
+
+.subtitle {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'Space Mono', monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Buttons */
+.btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--accent), #34d399);
+  color: #0a0a0f;
+  box-shadow: 0 0 20px rgba(110, 231, 183, 0.2);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 0 30px rgba(110, 231, 183, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-primary.active {
+  background: linear-gradient(135deg, #ef4444, #f87171);
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.3);
+}
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover {
+  border-color: var(--accent);
+  background: rgba(110, 231, 183, 0.05);
+}
+
+.btn-secondary.active {
+  border-color: var(--accent);
+  background: rgba(110, 231, 183, 0.1);
+  color: var(--accent);
+}
+
+/* Main content */
+.main-content {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* Visualization area */
+.viz-area {
+  position: relative;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.viz-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface);
+  padding: 4px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.viz-tab {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.viz-tab.active {
+  background: var(--surface2);
+  color: var(--accent);
+  box-shadow: 0 0 10px rgba(110, 231, 183, 0.1);
+}
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  border-radius: 16px;
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.canvas-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.start-prompt {
+  text-align: center;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.start-prompt .icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.start-prompt p {
+  font-size: 16px;
+  color: var(--text-dim);
+}
+
+.start-prompt p strong {
+  color: var(--accent);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Info bar */
+.info-bar {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 16px;
+  background: var(--surface);
+  border-radius: 10px;
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.info-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: blink 1.5s ease-in-out infinite;
+}
+
+.info-dot.off { background: #555; animation: none; }
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.info-value {
+  color: var(--text);
+}
+
+/* Side panel */
+.side-panel {
+  background: var(--surface);
+  border-left: 1px solid var(--border);
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.panel-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.panel-section h3 {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--text-dim);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Sliders */
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.slider-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.slider-label span:last-child {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--accent);
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(110, 231, 183, 0.4);
+}
+
+/* Partials list */
+.partials-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.partial-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.partial-row:hover {
+  background: var(--surface2);
+}
+
+.partial-color {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.partial-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  width: 24px;
+}
+
+.partial-freq {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--text);
+  flex: 1;
+}
+
+.partial-bar-container {
+  width: 60px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.partial-bar {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.05s linear;
+}
+
+/* Color schemes */
+.color-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.color-chip {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.color-chip.active {
+  border-color: var(--text);
+  transform: scale(1.1);
+}
+
+/* Select */
+select {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+select:focus { border-color: var(--accent); }
+
+/* Footer */
+footer {
+  padding: 12px 32px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-dim);
+  font-family: 'Space Mono', monospace;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .main-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto;
+  }
+  .side-panel {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 300px;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+/* Pitch display */
+.pitch-display {
+  text-align: center;
+  padding: 12px;
+  background: var(--surface2);
+  border-radius: 10px;
+  border: 1px solid var(--border);
+}
+
+.pitch-note {
+  font-family: 'Space Mono', monospace;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+}
+
+.pitch-freq {
+  font-family: 'Space Mono', monospace;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-top: 4px;
+}
+
+.pitch-cents {
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  color: var(--accent3);
+  margin-top: 2px;
+}
+
+/* Toggle */
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.toggle {
+  width: 40px;
+  height: 22px;
+  border-radius: 11px;
+  background: var(--border);
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.2s;
+}
+
+.toggle.active {
+  background: var(--accent);
+}
+
+.toggle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  transition: transform 0.2s;
+}
+
+.toggle.active::after {
+  transform: translateX(18px);
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🎵</div>
+      <div>
+        <h1>Parciais <span>Harmônicos</span></h1>
+        <div class="subtitle">Visualizador Dinâmico em Tempo Real</div>
+      </div>
+    </div>
+    <div class="header-controls">
+      <button class="btn btn-secondary" id="btnFile" title="Carregar arquivo de áudio">
+        📂 Arquivo
+      </button>
+      <button class="btn btn-primary" id="btnMic">
+        🎙️ Iniciar Captura
+      </button>
+    </div>
+  </header>
+
+  <div class="main-content">
+    <div class="viz-area">
+      <div style="display:flex; align-items:center; justify-content:space-between;">
+        <div class="viz-tabs">
+          <button class="viz-tab active" data-view="waterfall">Cascata 3D</button>
+          <button class="viz-tab" data-view="bars">Barras</button>
+          <button class="viz-tab" data-view="spectrogram">Espectrograma</button>
+          <button class="viz-tab" data-view="timeline">Temporal</button>
+        </div>
+      </div>
+      <div class="canvas-container">
+        <canvas id="vizCanvas"></canvas>
+        <div class="canvas-overlay" id="overlay">
+          <div class="start-prompt">
+            <div class="icon">🎧</div>
+            <p>Pressione <strong>Iniciar Captura</strong> ou carregue<br>um arquivo de áudio para começar</p>
+          </div>
+        </div>
+      </div>
+      <div class="info-bar">
+        <div class="info-item">
+          <div class="info-dot off" id="statusDot"></div>
+          <span id="statusText">Parado</span>
+        </div>
+        <div class="info-item">
+          <span>F₀:</span>
+          <span class="info-value" id="infoF0">—</span>
+        </div>
+        <div class="info-item">
+          <span>Parciais:</span>
+          <span class="info-value" id="infoPartials">—</span>
+        </div>
+        <div class="info-item">
+          <span>Taxa:</span>
+          <span class="info-value" id="infoRate">—</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-panel">
+      <!-- Pitch detection -->
+      <div class="panel-section">
+        <h3>Nota Detectada</h3>
+        <div class="pitch-display">
+          <div class="pitch-note" id="pitchNote">—</div>
+          <div class="pitch-freq" id="pitchFreq">— Hz</div>
+          <div class="pitch-cents" id="pitchCents"></div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="panel-section">
+        <h3>Controles</h3>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Nº de Parciais</span>
+            <span id="valPartials">16</span>
+          </div>
+          <input type="range" id="sliderPartials" min="4" max="32" value="16" step="1">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Suavização</span>
+            <span id="valSmooth">0.85</span>
+          </div>
+          <input type="range" id="sliderSmooth" min="0" max="0.98" value="0.85" step="0.01">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Ganho (dB)</span>
+            <span id="valGain">0</span>
+          </div>
+          <input type="range" id="sliderGain" min="-20" max="30" value="0" step="1">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>Piso (dB)</span>
+            <span id="valFloor">-80</span>
+          </div>
+          <input type="range" id="sliderFloor" min="-120" max="-30" value="-80" step="5">
+        </div>
+        <div class="slider-group">
+          <div class="slider-label">
+            <span>FFT Size</span>
+            <span id="valFFT">4096</span>
+          </div>
+          <select id="selectFFT">
+            <option value="2048">2048</option>
+            <option value="4096" selected>4096</option>
+            <option value="8192">8192</option>
+            <option value="16384">16384</option>
+          </select>
+        </div>
+        <div class="toggle-row">
+          <span>Escala logarítmica</span>
+          <button class="toggle" id="toggleLog"></button>
+        </div>
+      </div>
+
+      <!-- Color scheme -->
+      <div class="panel-section">
+        <h3>Paleta de Cores</h3>
+        <div class="color-chips" id="colorChips"></div>
+      </div>
+
+      <!-- Partials list -->
+      <div class="panel-section">
+        <h3>Parciais Ativas</h3>
+        <div class="partials-list" id="partialsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>NICS/UNICAMP · Acústica Musical</span>
+    <span>Web Audio API + Canvas 2D</span>
+  </footer>
+</div>
+
+<input type="file" id="fileInput" accept="audio/*" style="display:none">
+
+<script>
+// =============== STATE ===============
+const state = {
+  running: false,
+  view: 'waterfall',
+  numPartials: 16,
+  smoothing: 0.85,
+  gain: 0,
+  floor: -80,
+  fftSize: 4096,
+  logScale: false,
+  colorScheme: 0,
+  f0: 0,
+  partialAmplitudes: [],
+  history: [],
+  historyLength: 80,
+  spectrogramData: [],
+  audioContext: null,
+  analyser: null,
+  sourceNode: null,
+  isFile: false,
+};
+
+// =============== COLOR PALETTES ===============
+const palettes = [
+  { name: 'Aurora', colors: ['#6ee7b7','#3b82f6','#8b5cf6','#f472b6','#fbbf24','#ef4444','#06b6d4','#10b981','#f59e0b','#ec4899','#8b5cf6','#14b8a6','#f43f5e','#a78bfa','#34d399','#fb923c','#60a5fa','#c084fc','#f9a8d4','#fcd34d','#6ee7b7','#3b82f6','#8b5cf6','#f472b6','#fbbf24','#ef4444','#06b6d4','#10b981','#f59e0b','#ec4899','#8b5cf6','#14b8a6'], bg: '#0a0a0f' },
+  { name: 'Fogo', colors: ['#fef3c7','#fde68a','#fcd34d','#fbbf24','#f59e0b','#d97706','#b45309','#92400e','#f87171','#ef4444','#dc2626','#b91c1c','#fca5a5','#f97316','#ea580c','#c2410c','#fef3c7','#fde68a','#fcd34d','#fbbf24','#f59e0b','#d97706','#b45309','#92400e','#f87171','#ef4444','#dc2626','#b91c1c','#fca5a5','#f97316','#ea580c','#c2410c'], bg: '#1a0a00' },
+  { name: 'Oceano', colors: ['#cffafe','#a5f3fc','#67e8f9','#22d3ee','#06b6d4','#0891b2','#0e7490','#155e75','#bae6fd','#7dd3fc','#38bdf8','#0ea5e9','#0284c7','#0369a1','#075985','#0c4a6e','#cffafe','#a5f3fc','#67e8f9','#22d3ee','#06b6d4','#0891b2','#0e7490','#155e75','#bae6fd','#7dd3fc','#38bdf8','#0ea5e9','#0284c7','#0369a1','#075985','#0c4a6e'], bg: '#020617' },
+  { name: 'Neon', colors: ['#00ff87','#ff00ff','#00ffff','#ffff00','#ff4444','#44ff44','#4444ff','#ff8800','#ff0088','#8800ff','#00ff44','#ff4400','#0088ff','#88ff00','#ff0044','#4400ff','#00ff87','#ff00ff','#00ffff','#ffff00','#ff4444','#44ff44','#4444ff','#ff8800','#ff0088','#8800ff','#00ff44','#ff4400','#0088ff','#88ff00','#ff0044','#4400ff'], bg: '#050510' },
+];
+
+// =============== DOM REFS ===============
+const canvas = document.getElementById('vizCanvas');
+const ctx = canvas.getContext('2d');
+const overlay = document.getElementById('overlay');
+const btnMic = document.getElementById('btnMic');
+const btnFile = document.getElementById('btnFile');
+const fileInput = document.getElementById('fileInput');
+
+// =============== INIT COLOR CHIPS ===============
+const chipsContainer = document.getElementById('colorChips');
+palettes.forEach((p, i) => {
+  const chip = document.createElement('div');
+  chip.className = 'color-chip' + (i === 0 ? ' active' : '');
+  chip.style.background = `linear-gradient(135deg, ${p.colors[0]}, ${p.colors[2]}, ${p.colors[4]})`;
+  chip.title = p.name;
+  chip.onclick = () => {
+    document.querySelectorAll('.color-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    state.colorScheme = i;
+  };
+  chipsContainer.appendChild(chip);
+});
+
+// =============== CONTROLS ===============
+document.getElementById('sliderPartials').oninput = e => {
+  state.numPartials = +e.target.value;
+  document.getElementById('valPartials').textContent = e.target.value;
+  buildPartialsList();
+};
+
+document.getElementById('sliderSmooth').oninput = e => {
+  state.smoothing = +e.target.value;
+  document.getElementById('valSmooth').textContent = e.target.value;
+  if (state.analyser) state.analyser.smoothingTimeConstant = state.smoothing;
+};
+
+document.getElementById('sliderGain').oninput = e => {
+  state.gain = +e.target.value;
+  document.getElementById('valGain').textContent = e.target.value;
+};
+
+document.getElementById('sliderFloor').oninput = e => {
+  state.floor = +e.target.value;
+  document.getElementById('valFloor').textContent = e.target.value;
+  if (state.analyser) state.analyser.minDecibels = state.floor;
+};
+
+document.getElementById('selectFFT').onchange = e => {
+  state.fftSize = +e.target.value;
+  document.getElementById('valFFT').textContent = e.target.value;
+  if (state.analyser) {
+    state.analyser.fftSize = state.fftSize;
+  }
+};
+
+document.getElementById('toggleLog').onclick = e => {
+  state.logScale = !state.logScale;
+  e.currentTarget.classList.toggle('active', state.logScale);
+};
+
+document.querySelectorAll('.viz-tab').forEach(tab => {
+  tab.onclick = () => {
+    document.querySelectorAll('.viz-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    state.view = tab.dataset.view;
+    state.history = [];
+    state.spectrogramData = [];
+  };
+});
+
+// =============== AUDIO ===============
+async function startMic() {
+  if (state.running) {
+    stopAudio();
+    return;
+  }
+  try {
+    state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    state.sourceNode = state.audioContext.createMediaStreamSource(stream);
+    state.isFile = false;
+    setupAnalyser();
+    state.sourceNode.connect(state.analyser);
+    state.running = true;
+    state.stream = stream;
+    updateUI();
+    animate();
+  } catch (err) {
+    alert('Erro ao acessar microfone: ' + err.message);
+  }
+}
+
+function loadFile() {
+  fileInput.click();
+}
+
+fileInput.onchange = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (state.running) stopAudio();
+
+  state.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const arrayBuffer = await file.arrayBuffer();
+  const audioBuffer = await state.audioContext.decodeAudioData(arrayBuffer);
+  state.sourceNode = state.audioContext.createBufferSource();
+  state.sourceNode.buffer = audioBuffer;
+  state.sourceNode.loop = true;
+  state.isFile = true;
+  setupAnalyser();
+  state.sourceNode.connect(state.analyser);
+  state.analyser.connect(state.audioContext.destination);
+  state.sourceNode.start();
+  state.running = true;
+  updateUI();
+  animate();
+};
+
+function setupAnalyser() {
+  state.analyser = state.audioContext.createAnalyser();
+  state.analyser.fftSize = state.fftSize;
+  state.analyser.smoothingTimeConstant = state.smoothing;
+  state.analyser.minDecibels = state.floor;
+  state.analyser.maxDecibels = -10;
+}
+
+function stopAudio() {
+  state.running = false;
+  if (state.stream) {
+    state.stream.getTracks().forEach(t => t.stop());
+    state.stream = null;
+  }
+  if (state.sourceNode) {
+    try { state.sourceNode.stop(); } catch(e) {}
+    state.sourceNode.disconnect();
+    state.sourceNode = null;
+  }
+  if (state.audioContext) {
+    state.audioContext.close();
+    state.audioContext = null;
+  }
+  state.analyser = null;
+  state.history = [];
+  state.spectrogramData = [];
+  updateUI();
+}
+
+btnMic.onclick = startMic;
+btnFile.onclick = loadFile;
+
+function updateUI() {
+  overlay.style.display = state.running ? 'none' : 'flex';
+  btnMic.classList.toggle('active', state.running);
+  btnMic.innerHTML = state.running ? '⏹ Parar' : '🎙️ Iniciar Captura';
+  const dot = document.getElementById('statusDot');
+  dot.classList.toggle('off', !state.running);
+  document.getElementById('statusText').textContent = state.running ? (state.isFile ? 'Arquivo' : 'Microfone') : 'Parado';
+  document.getElementById('infoRate').textContent = state.audioContext ? state.audioContext.sampleRate + ' Hz' : '—';
+}
+
+// =============== PITCH DETECTION (autocorrelation) ===============
+function detectPitch(buf, sampleRate) {
+  const SIZE = buf.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.01) return -1;
+
+  let r1 = 0, r2 = SIZE - 1;
+  const thresh = 0.2;
+  for (let i = 0; i < SIZE / 2; i++) {
+    if (Math.abs(buf[i]) < thresh) { r1 = i; break; }
+  }
+  for (let i = 1; i < SIZE / 2; i++) {
+    if (Math.abs(buf[SIZE - i]) < thresh) { r2 = SIZE - i; break; }
+  }
+
+  const trimBuf = buf.slice(r1, r2);
+  const trimSize = trimBuf.length;
+  const c = new Float32Array(trimSize);
+  for (let i = 0; i < trimSize; i++) {
+    for (let j = 0; j < trimSize - i; j++) {
+      c[i] += trimBuf[j] * trimBuf[j + i];
+    }
+  }
+
+  let d1 = 0;
+  while (c[d1] > c[d1 + 1]) d1++;
+  let maxVal = -1, maxPos = -1;
+  for (let i = d1; i < trimSize; i++) {
+    if (c[i] > maxVal) { maxVal = c[i]; maxPos = i; }
+  }
+
+  const T0 = maxPos;
+  if (T0 === 0 || T0 === -1) return -1;
+
+  // parabolic interpolation
+  const x1 = c[T0 - 1] || 0, x2 = c[T0], x3 = c[T0 + 1] || 0;
+  const a = (x1 + x3 - 2 * x2) / 2;
+  const b = (x3 - x1) / 2;
+  const shift = a !== 0 ? -b / (2 * a) : 0;
+
+  return sampleRate / (T0 + shift);
+}
+
+const noteNames = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+function freqToNote(f) {
+  const noteNum = 12 * (Math.log2(f / 440)) + 69;
+  const rounded = Math.round(noteNum);
+  const cents = Math.round((noteNum - rounded) * 100);
+  const name = noteNames[((rounded % 12) + 12) % 12];
+  const octave = Math.floor(rounded / 12) - 1;
+  return { name: name + octave, cents };
+}
+
+// =============== EXTRACT PARTIALS ===============
+function extractPartials() {
+  if (!state.analyser || !state.audioContext) return;
+
+  const bufLen = state.analyser.fftSize;
+  const timeBuf = new Float32Array(bufLen);
+  state.analyser.getFloatTimeDomainData(timeBuf);
+
+  const f0 = detectPitch(timeBuf, state.audioContext.sampleRate);
+  state.f0 = f0 > 20 ? f0 : 0;
+
+  // Update pitch display
+  if (state.f0 > 0) {
+    const note = freqToNote(state.f0);
+    document.getElementById('pitchNote').textContent = note.name;
+    document.getElementById('pitchFreq').textContent = state.f0.toFixed(1) + ' Hz';
+    const sign = note.cents >= 0 ? '+' : '';
+    document.getElementById('pitchCents').textContent = sign + note.cents + ' cents';
+  } else {
+    document.getElementById('pitchNote').textContent = '—';
+    document.getElementById('pitchFreq').textContent = '— Hz';
+    document.getElementById('pitchCents').textContent = '';
+  }
+
+  document.getElementById('infoF0').textContent = state.f0 > 0 ? state.f0.toFixed(1) + ' Hz' : '—';
+
+  // Get frequency data
+  const freqData = new Float32Array(state.analyser.frequencyBinCount);
+  state.analyser.getFloatFrequencyData(freqData);
+
+  const sampleRate = state.audioContext.sampleRate;
+  const binWidth = sampleRate / state.analyser.fftSize;
+  const gainLin = Math.pow(10, state.gain / 20);
+
+  const amps = [];
+  if (state.f0 > 20) {
+    for (let i = 1; i <= state.numPartials; i++) {
+      const freq = state.f0 * i;
+      const bin = Math.round(freq / binWidth);
+      if (bin >= freqData.length) {
+        amps.push(0);
+        continue;
+      }
+      // pick max around expected bin
+      let maxDb = -200;
+      const spread = Math.max(2, Math.round(3 * freq / 1000));
+      for (let b = Math.max(0, bin - spread); b <= Math.min(freqData.length - 1, bin + spread); b++) {
+        if (freqData[b] > maxDb) maxDb = freqData[b];
+      }
+      const norm = Math.max(0, (maxDb - state.floor) / (-state.floor)) * gainLin;
+      amps.push(Math.min(1, norm));
+    }
+  } else {
+    // No clear pitch — show spectral bands
+    const numBands = state.numPartials;
+    const maxFreq = state.logScale ? 8000 : sampleRate / 2;
+    for (let i = 0; i < numBands; i++) {
+      let fLow, fHigh;
+      if (state.logScale) {
+        fLow = 20 * Math.pow(maxFreq / 20, i / numBands);
+        fHigh = 20 * Math.pow(maxFreq / 20, (i + 1) / numBands);
+      } else {
+        fLow = (i / numBands) * maxFreq;
+        fHigh = ((i + 1) / numBands) * maxFreq;
+      }
+      const bLow = Math.round(fLow / binWidth);
+      const bHigh = Math.round(fHigh / binWidth);
+      let maxDb = -200;
+      for (let b = Math.max(0, bLow); b <= Math.min(freqData.length - 1, bHigh); b++) {
+        if (freqData[b] > maxDb) maxDb = freqData[b];
+      }
+      const norm = Math.max(0, (maxDb - state.floor) / (-state.floor)) * gainLin;
+      amps.push(Math.min(1, norm));
+    }
+  }
+
+  state.partialAmplitudes = amps;
+  document.getElementById('infoPartials').textContent = state.f0 > 0 ? state.numPartials : 'bandas';
+
+  // Push to history
+  state.history.push([...amps]);
+  if (state.history.length > state.historyLength) state.history.shift();
+
+  // Spectrogram
+  state.spectrogramData.push([...amps]);
+  if (state.spectrogramData.length > 200) state.spectrogramData.shift();
+
+  updatePartialsList();
+}
+
+// =============== PARTIALS LIST ===============
+function buildPartialsList() {
+  const list = document.getElementById('partialsList');
+  list.innerHTML = '';
+  const pal = palettes[state.colorScheme].colors;
+  for (let i = 0; i < state.numPartials; i++) {
+    const row = document.createElement('div');
+    row.className = 'partial-row';
+    row.innerHTML = `
+      <div class="partial-color" style="background:${pal[i % pal.length]}"></div>
+      <div class="partial-num">${i + 1}</div>
+      <div class="partial-freq" id="pfreq${i}">—</div>
+      <div class="partial-bar-container">
+        <div class="partial-bar" id="pbar${i}" style="width:0%;background:${pal[i % pal.length]}"></div>
+      </div>
+    `;
+    list.appendChild(row);
+  }
+}
+buildPartialsList();
+
+function updatePartialsList() {
+  const pal = palettes[state.colorScheme].colors;
+  for (let i = 0; i < state.numPartials; i++) {
+    const freqEl = document.getElementById('pfreq' + i);
+    const barEl = document.getElementById('pbar' + i);
+    if (!freqEl || !barEl) continue;
+    const freq = state.f0 > 0 ? (state.f0 * (i + 1)).toFixed(0) + ' Hz' : '—';
+    freqEl.textContent = freq;
+    const amp = (state.partialAmplitudes[i] || 0) * 100;
+    barEl.style.width = amp + '%';
+    barEl.style.background = pal[i % pal.length];
+  }
+}
+
+// =============== DRAWING ===============
+function resizeCanvas() {
+  const container = canvas.parentElement;
+  canvas.width = container.clientWidth * window.devicePixelRatio;
+  canvas.height = container.clientHeight * window.devicePixelRatio;
+  ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+}
+
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+function drawWaterfall() {
+  const w = canvas.width / window.devicePixelRatio;
+  const h = canvas.height / window.devicePixelRatio;
+  const pal = palettes[state.colorScheme].colors;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const hist = state.history;
+  if (hist.length === 0) return;
+
+  const n = state.numPartials;
+  const rows = hist.length;
+  const marginL = 60, marginR = 30, marginT = 30, marginB = 50;
+  const plotW = w - marginL - marginR;
+  const plotH = h - marginT - marginB;
+
+  // 3D perspective offsets
+  const depthX = plotW * 0.25;
+  const depthY = plotH * 0.3;
+
+  // Draw from back to front
+  for (let t = 0; t < rows; t++) {
+    const progress = t / Math.max(1, rows - 1);
+    const offsetX = (1 - progress) * depthX;
+    const offsetY = (1 - progress) * depthY;
+    const alpha = 0.3 + progress * 0.7;
+    const rowW = plotW - depthX + progress * depthX * 0.3;
+
+    const amps = hist[t];
+
+    // Draw filled area
+    ctx.beginPath();
+    ctx.moveTo(marginL + offsetX, marginT + offsetY + plotH - depthY);
+    for (let i = 0; i < n; i++) {
+      const x = marginL + offsetX + (i / (n - 1)) * rowW * 0.85;
+      const amp = amps[i] || 0;
+      const y = marginT + offsetY + (plotH - depthY) - amp * (plotH - depthY) * 0.8;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    // close bottom
+    const lastX = marginL + offsetX + ((n - 1) / (n - 1)) * rowW * 0.85;
+    ctx.lineTo(lastX, marginT + offsetY + plotH - depthY);
+    ctx.lineTo(marginL + offsetX, marginT + offsetY + plotH - depthY);
+    ctx.closePath();
+
+    const grad = ctx.createLinearGradient(marginL + offsetX, marginT + offsetY, marginL + offsetX + rowW, marginT + offsetY);
+    for (let i = 0; i < Math.min(n, 6); i++) {
+      grad.addColorStop(i / 5, pal[i % pal.length] + Math.round(alpha * 40).toString(16).padStart(2, '0'));
+    }
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Draw line
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const x = marginL + offsetX + (i / (n - 1)) * rowW * 0.85;
+      const amp = amps[i] || 0;
+      const y = marginT + offsetY + (plotH - depthY) - amp * (plotH - depthY) * 0.8;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = pal[0] + Math.round(alpha * 255).toString(16).padStart(2, '0');
+    ctx.lineWidth = progress > 0.9 ? 2.5 : 1;
+    ctx.stroke();
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#7a7a8e';
+  ctx.font = '11px Space Mono';
+  ctx.fillText('Nº Parcial →', marginL + plotW * 0.3, h - 10);
+  ctx.save();
+  ctx.translate(15, marginT + plotH * 0.5);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Amplitude', 0, 0);
+  ctx.restore();
+  ctx.fillText('Tempo ↗', w - 80, marginT + 15);
+}
+
+function drawBars() {
+  const w = canvas.width / window.devicePixelRatio;
+  const h = canvas.height / window.devicePixelRatio;
+  const pal = palettes[state.colorScheme].colors;
+  const amps = state.partialAmplitudes;
+
+  ctx.clearRect(0, 0, w, h);
+
+  const n = state.numPartials;
+  const marginL = 60, marginR = 30, marginT = 30, marginB = 50;
+  const plotW = w - marginL - marginR;
+  const plotH = h - marginT - marginB;
+  const barW = Math.min(40, (plotW / n) * 0.7);
+  const gap = (plotW - barW * n) / (n + 1);
+
+  // Grid lines
+  ctx.strokeStyle = '#1a1a26';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = marginT + (i / 4) * plotH;
+    ctx.beginPath();
+    ctx.moveTo(marginL, y);
+    ctx.lineTo(marginL + plotW, y);
+    ctx.stroke();
+  }
+
+  for (let i = 0; i < n; i++) {
+    const amp = amps[i] || 0;
+    const x = marginL + gap + i * (barW + gap);
+    const barH = amp * plotH;
+    const y = marginT + plotH - barH;
+    const color = pal[i % pal.length];
+
+    // Glow
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 12 * amp;
+
+    // Bar
+    const grad = ctx.createLinearGradient(x, y, x, marginT + plotH);
+    grad.addColorStop(0, color);
+    grad.addColorStop(1, color + '44');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, barH, [4, 4, 0, 0]);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+
+    // Label
+    ctx.fillStyle = '#7a7a8e';
+    ctx.font = '10px Space Mono';
+    ctx.textAlign = 'center';
+    ctx.fillText(i + 1, x + barW / 2, marginT + plotH + 16);
+
+    if (state.f0 > 0) {
+      ctx.fillStyle = color + '99';
+      ctx.font = '8px Space Mono';
+      ctx.fillText((state.f0 * (i + 1)).toFixed(0), x + barW / 2, marginT + plotH + 28);
+    }
+  }
+  ctx.textAlign = 'start';
+
+  // Y axis
+  ctx.fillStyle = '#7a7a8e';
+  ctx.font = '10px Space Mono';
+  for (let i = 0; i <= 4; i++) {
+    const y = marginT + (1 - i / 4) * plotH;
+    ctx.fillText((i * 25) + '%', marginL - 36, y + 4);
+  }
+}
+
+function drawSpectrogram() {
+  const w = canvas.width / window.devicePixelRatio;
+  const h = canvas.height / window.devicePixelRatio;
+  const pal = palettes[state.colorScheme].colors;
+  const data = state.spectrogramData;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (data.length === 0) return;
+
+  const n = state.numPartials;
+  const marginL = 60, marginR = 30, marginT = 30, marginB = 50;
+  const plotW = w - marginL - marginR;
+  const plotH = h - marginT - marginB;
+
+  const cols = data.length;
+  const cellW = plotW / cols;
+  const cellH = plotH / n;
+
+  for (let t = 0; t < cols; t++) {
+    for (let i = 0; i < n; i++) {
+      const amp = data[t][i] || 0;
+      const x = marginL + t * cellW;
+      const y = marginT + (n - 1 - i) * cellH;
+
+      const brightness = Math.floor(amp * 255);
+      const color = pal[i % pal.length];
+      // Parse hex and apply brightness
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      ctx.fillStyle = `rgba(${r},${g},${b},${amp})`;
+      ctx.fillRect(x, y, cellW + 1, cellH + 1);
+    }
+  }
+
+  // Labels
+  ctx.fillStyle = '#7a7a8e';
+  ctx.font = '10px Space Mono';
+  for (let i = 0; i < n; i++) {
+    const y = marginT + (n - 1 - i) * cellH + cellH / 2 + 4;
+    ctx.fillText(i + 1, marginL - 20, y);
+  }
+  ctx.fillText('Tempo →', marginL + plotW / 2 - 30, h - 10);
+  ctx.save();
+  ctx.translate(12, marginT + plotH / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Parcial', 0, 0);
+  ctx.restore();
+}
+
+function drawTimeline() {
+  const w = canvas.width / window.devicePixelRatio;
+  const h = canvas.height / window.devicePixelRatio;
+  const pal = palettes[state.colorScheme].colors;
+  const hist = state.history;
+
+  ctx.clearRect(0, 0, w, h);
+
+  if (hist.length < 2) return;
+
+  const n = Math.min(state.numPartials, 8); // show top 8
+  const marginL = 60, marginR = 30, marginT = 30, marginB = 50;
+  const plotW = w - marginL - marginR;
+  const plotH = h - marginT - marginB;
+
+  // Grid
+  ctx.strokeStyle = '#1a1a26';
+  ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const y = marginT + (i / 4) * plotH;
+    ctx.beginPath();
+    ctx.moveTo(marginL, y);
+    ctx.lineTo(marginL + plotW, y);
+    ctx.stroke();
+  }
+
+  // Draw each partial as a line over time
+  for (let p = n - 1; p >= 0; p--) {
+    const color = pal[p % pal.length];
+
+    ctx.beginPath();
+    for (let t = 0; t < hist.length; t++) {
+      const x = marginL + (t / (hist.length - 1)) * plotW;
+      const amp = hist[t][p] || 0;
+      const y = marginT + plotH - amp * plotH;
+      if (t === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = color;
+    ctx.lineWidth = p === 0 ? 2.5 : 1.5;
+    ctx.globalAlpha = p === 0 ? 1 : 0.6;
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    // Legend
+    const lastAmp = hist[hist.length - 1][p] || 0;
+    const lastY = marginT + plotH - lastAmp * plotH;
+    ctx.fillStyle = color;
+    ctx.font = '10px Space Mono';
+    ctx.fillText('P' + (p + 1), marginL + plotW + 6, lastY + 4);
+  }
+
+  ctx.fillStyle = '#7a7a8e';
+  ctx.font = '10px Space Mono';
+  ctx.fillText('Tempo →', marginL + plotW / 2 - 30, h - 10);
+}
+
+// =============== ANIMATION LOOP ===============
+function animate() {
+  if (!state.running) return;
+
+  resizeCanvas();
+  extractPartials();
+
+  switch (state.view) {
+    case 'waterfall': drawWaterfall(); break;
+    case 'bars': drawBars(); break;
+    case 'spectrogram': drawSpectrogram(); break;
+    case 'timeline': drawTimeline(); break;
+  }
+
+  requestAnimationFrame(animate);
+}
+</script>
+</body>
+</html>
